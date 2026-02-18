@@ -27,8 +27,32 @@ public class OrderService : IOrderService
         return await _repository.GetByIdAsync(id);
     }
 
-    public async Task UpdateOrderAsync(Order order)
-    {
-        await _repository.UpdateAsync(order);
-    }
+   public async Task<Order?> UpdateOrderAsync(int id, Order updatedOrder)
+{
+    var existingOrder = await _repository.GetByIdAsync(id);
+
+    if (existingOrder == null)
+        return null;
+
+    existingOrder.CustomerName = updatedOrder.CustomerName;
+    existingOrder.TotalAmount = updatedOrder.TotalAmount;
+    existingOrder.IsVipCustomer = updatedOrder.IsVipCustomer;
+    existingOrder.Status = updatedOrder.Status;
+
+    await _repository.UpdateAsync(existingOrder);
+
+    return existingOrder;
+}
+
+public async Task<bool> DeleteOrderAsync(int id)
+{
+    var order = await _repository.GetByIdAsync(id);
+
+    if (order == null)
+        return false;
+
+    await _repository.DeleteAsync(order);
+    return true;
+}
+
 }

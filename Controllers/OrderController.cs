@@ -83,4 +83,44 @@ public async Task<ActionResult<OrderResponse>> GetOrderById(int id)
     return Ok(response);
 }
 
+[HttpPut("{id}")]
+public async Task<ActionResult<OrderResponse>> UpdateOrder(int id, [FromBody] UpdateOrderRequest request)
+{
+    var updatedOrder = new Order
+    {
+        CustomerName = request.CustomerName,
+        TotalAmount = request.TotalAmount,
+        IsVipCustomer = request.IsVipCustomer,
+        Status = request.Status
+    };
+
+    var result = await _service.UpdateOrderAsync(id, updatedOrder);
+
+    if (result == null)
+        return NotFound();
+
+    var response = new OrderResponse
+    {
+        Id = result.Id,
+        CustomerName = result.CustomerName,
+        TotalAmount = result.TotalAmount,
+        IsVipCustomer = result.IsVipCustomer,
+        Status = result.Status,
+        CreatedAt = result.CreatedAt
+    };
+
+    return Ok(response);
+}
+[HttpDelete("{id}")]
+public async Task<IActionResult> DeleteOrder(int id)
+{
+    var success = await _service.DeleteOrderAsync(id);
+
+    if (!success)
+        return NotFound();
+
+    return NoContent();
+}
+
+
 }
