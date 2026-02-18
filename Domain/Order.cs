@@ -10,7 +10,7 @@ public class Order
 
     public bool IsVipCustomer { get; set; }
 
-    public OrderStatus Status { get; set; } = OrderStatus.CREATED;
+    public OrderStatus Status { get; set; } = OrderStatus.Created;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

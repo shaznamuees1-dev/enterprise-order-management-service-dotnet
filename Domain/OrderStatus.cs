@@ -2,9 +2,9 @@ namespace OrderManagementService.Domain;
 
 public enum OrderStatus
 {
-    CREATED,
-    PAID,
-    SHIPPED,
-    COMPLETED,
-    CANCELLED
+    Created = 0,
+    Approved = 1,
+    Priority = 2,
+    Completed = 3,
+    Cancelled = 4
 }

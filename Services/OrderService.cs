@@ -13,9 +13,24 @@ public class OrderService : IOrderService
     }
 
     public async Task<Order> CreateOrderAsync(Order order)
+{
+    order.CreatedAt = DateTime.UtcNow;
+
+     
+    if (order.TotalAmount > 10000)
     {
-        return await _repository.CreateAsync(order);
+        order.Status = OrderStatus.Approved;
     }
+
+  
+    if (order.IsVipCustomer)
+    {
+        order.Status = OrderStatus.Priority;
+    }
+
+    return await _repository.CreateAsync(order);
+}
+
 
     public async Task<List<Order>> GetAllOrdersAsync()
     {
@@ -27,12 +42,15 @@ public class OrderService : IOrderService
         return await _repository.GetByIdAsync(id);
     }
 
-   public async Task<Order?> UpdateOrderAsync(int id, Order updatedOrder)
+ public async Task<Order?> UpdateOrderAsync(int id, Order updatedOrder)
 {
     var existingOrder = await _repository.GetByIdAsync(id);
 
     if (existingOrder == null)
         return null;
+
+    if (existingOrder.Status == OrderStatus.Completed)
+        throw new InvalidOperationException("Completed orders cannot be modified.");
 
     existingOrder.CustomerName = updatedOrder.CustomerName;
     existingOrder.TotalAmount = updatedOrder.TotalAmount;
@@ -43,6 +61,7 @@ public class OrderService : IOrderService
 
     return existingOrder;
 }
+
 
 public async Task<bool> DeleteOrderAsync(int id)
 {

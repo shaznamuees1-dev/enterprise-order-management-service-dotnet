@@ -1,6 +1,20 @@
+# Build folders
 bin/
 obj/
+
+# User files
+*.user
+*.suo
+
+# Database files
 *.db
 *.sqlite
 *.db-shm
 *.db-wal
+
+# VS Code
+.vscode/
+
+# Rider / VS
+.idea/
+*.csproj.user
