@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using OrderManagementService.Domain;
 using OrderManagementService.Services;
+using OrderManagementService.DTOs;
+using System.Linq;
+
 
 namespace OrderManagementService.Controllers;
 
@@ -16,27 +19,68 @@ public class OrderController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<Order>> CreateOrder(Order order)
+public async Task<ActionResult<OrderResponse>> CreateOrder(CreateOrderRequest request)
+{
+    var order = new Order
     {
-        var createdOrder = await _service.CreateOrderAsync(order);
-        return CreatedAtAction(nameof(GetOrderById), new { id = createdOrder.Id }, createdOrder);
-    }
+        CustomerName = request.CustomerName,
+        TotalAmount = request.TotalAmount,
+        IsVipCustomer = request.IsVipCustomer
+    };
+
+    var createdOrder = await _service.CreateOrderAsync(order);
+
+    var response = new OrderResponse
+    {
+        Id = createdOrder.Id,
+        CustomerName = createdOrder.CustomerName,
+        TotalAmount = createdOrder.TotalAmount,
+        IsVipCustomer = createdOrder.IsVipCustomer,
+        Status = createdOrder.Status,
+        CreatedAt = createdOrder.CreatedAt
+    };
+
+    return CreatedAtAction(nameof(GetOrderById), new { id = response.Id }, response);
+}
+
 
     [HttpGet]
-    public async Task<ActionResult<List<Order>>> GetAllOrders()
+public async Task<ActionResult<List<OrderResponse>>> GetAllOrders()
+{
+    var orders = await _service.GetAllOrdersAsync();
+
+    var response = orders.Select(o => new OrderResponse
     {
-        var orders = await _service.GetAllOrdersAsync();
-        return Ok(orders);
-    }
+        Id = o.Id,
+        CustomerName = o.CustomerName,
+        TotalAmount = o.TotalAmount,
+        IsVipCustomer = o.IsVipCustomer,
+        Status = o.Status,
+        CreatedAt = o.CreatedAt
+    }).ToList();
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Order>> GetOrderById(int id)
+    return Ok(response);
+}
+
+  [HttpGet("{id}")]
+public async Task<ActionResult<OrderResponse>> GetOrderById(int id)
+{
+    var order = await _service.GetOrderByIdAsync(id);
+
+    if (order == null)
+        return NotFound();
+
+    var response = new OrderResponse
     {
-        var order = await _service.GetOrderByIdAsync(id);
+        Id = order.Id,
+        CustomerName = order.CustomerName,
+        TotalAmount = order.TotalAmount,
+        IsVipCustomer = order.IsVipCustomer,
+        Status = order.Status,
+        CreatedAt = order.CreatedAt
+    };
 
-        if (order == null)
-            return NotFound();
+    return Ok(response);
+}
 
-        return Ok(order);
-    }
 }

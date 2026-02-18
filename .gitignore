@@ -2,3 +2,5 @@ bin/
 obj/
 *.db
 *.sqlite
+*.db-shm
+*.db-wal
