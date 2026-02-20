@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseUrls("http://0.0.0.0:8080");
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -26,18 +27,14 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+ app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseMiddleware<ExceptionMiddleware>();
-
-app.UseHttpsRedirection();
-
+ 
 app.MapControllers();  
 
 app.MapHealthChecks("/health");
+
 
 app.Run();
