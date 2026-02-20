@@ -28,7 +28,7 @@ jobs:
         run: dotnet build --no-restore --configuration Release
 
       - name: Publish project
-        run: dotnet publish -c Release -o out
+        run: dotnet publish OrderManagementService.csproj -c Release -o out
 
       - name: Build Docker image
         run: docker build -t ordermanagementservice-api .
