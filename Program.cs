@@ -4,6 +4,7 @@ using OrderManagementService.Repositories;
 using OrderManagementService.Services;
 using System.Text.Json.Serialization;
 using System.Threading;
+using OrderManagementService.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 

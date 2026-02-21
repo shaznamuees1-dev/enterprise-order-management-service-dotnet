@@ -1,5 +1,8 @@
 using System.Net;
 using System.Text.Json;
+using OrderManagementService.DTOs;
+
+namespace OrderManagementService.Middleware;
 
 public class ExceptionMiddleware
 {
@@ -16,17 +19,35 @@ public class ExceptionMiddleware
         {
             await _next(context);
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
+        {
+            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            context.Response.ContentType = "application/json";
+
+            var response = new ErrorResponse
+            {
+                Message = ex.Message,
+                StatusCode = context.Response.StatusCode,
+                Timestamp = DateTime.UtcNow
+            };
+
+            await context.Response.WriteAsync(
+                JsonSerializer.Serialize(response));
+        }
+        catch (Exception)
         {
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
             context.Response.ContentType = "application/json";
 
-            var response = new
+            var response = new ErrorResponse
             {
-                message = ex.Message
+                Message = "An unexpected error occurred.",
+                StatusCode = context.Response.StatusCode,
+                Timestamp = DateTime.UtcNow
             };
 
-            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+            await context.Response.WriteAsync(
+                JsonSerializer.Serialize(response));
         }
     }
 }
