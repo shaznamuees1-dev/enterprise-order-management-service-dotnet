@@ -41,4 +41,10 @@ public async Task DeleteAsync(Order order)
     _context.Orders.Remove(order);
     await _context.SaveChangesAsync();
 }
+
+public IQueryable<Order> GetQueryable()
+{
+    return _context.Orders.AsQueryable();
+}
+
 }

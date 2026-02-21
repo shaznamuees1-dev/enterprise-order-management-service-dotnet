@@ -44,10 +44,14 @@ public async Task<ActionResult<OrderResponse>> CreateOrder(CreateOrderRequest re
 }
 
 
-    [HttpGet]
-public async Task<ActionResult<List<OrderResponse>>> GetAllOrders()
+[HttpGet]
+public async Task<ActionResult<List<OrderResponse>>> GetAllOrders(
+    int page = 1,
+    int pageSize = 10,
+    string? sortBy = null,
+    string sortOrder = "asc")
 {
-    var orders = await _service.GetAllOrdersAsync();
+    var orders = await _service.GetAllOrdersAsync(page, pageSize, sortBy, sortOrder);
 
     var response = orders.Select(o => new OrderResponse
     {

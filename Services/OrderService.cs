@@ -1,6 +1,6 @@
 using OrderManagementService.Domain;
 using OrderManagementService.Repositories;
-
+using Microsoft.EntityFrameworkCore;
 namespace OrderManagementService.Services;
 
 public class OrderService : IOrderService
@@ -32,12 +32,38 @@ public class OrderService : IOrderService
 }
 
 
-    public async Task<List<Order>> GetAllOrdersAsync()
+   public async Task<List<Order>> GetAllOrdersAsync(
+    int page,
+    int pageSize,
+    string? sortBy,
+    string sortOrder)
+{
+    var query = _repository.GetQueryable();
+
+    // Sorting
+    if (!string.IsNullOrEmpty(sortBy))
     {
-        return await _repository.GetAllAsync();
+        query = sortBy.ToLower() switch
+        {
+            "customername" => sortOrder == "desc"
+                ? query.OrderByDescending(o => o.CustomerName)
+                : query.OrderBy(o => o.CustomerName),
+
+            "totalamount" => sortOrder == "desc"
+                ? query.OrderByDescending(o => o.TotalAmount)
+                : query.OrderBy(o => o.TotalAmount),
+
+            _ => query
+        };
     }
 
-    public async Task<Order?> GetOrderByIdAsync(int id)
+    var orders = await query
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync();
+
+    return orders;
+}    public async Task<Order?> GetOrderByIdAsync(int id)
     {
         return await _repository.GetByIdAsync(id);
     }
