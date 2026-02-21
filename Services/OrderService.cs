@@ -32,15 +32,35 @@ public class OrderService : IOrderService
 }
 
 
-   public async Task<List<Order>> GetAllOrdersAsync(
+ public async Task<List<Order>> GetAllOrdersAsync(
     int page,
     int pageSize,
     string? sortBy,
-    string sortOrder)
+    string sortOrder,
+    string? status,
+    bool? isVip,
+    decimal? minAmount)
 {
     var query = _repository.GetQueryable();
 
-    // Sorting
+    //Filtering
+    if (!string.IsNullOrEmpty(status) &&
+        Enum.TryParse<OrderStatus>(status, true, out var parsedStatus))
+    {
+        query = query.Where(o => o.Status == parsedStatus);
+    }
+
+    if (isVip.HasValue)
+    {
+        query = query.Where(o => o.IsVipCustomer == isVip.Value);
+    }
+
+    if (minAmount.HasValue)
+    {
+        query = query.Where(o => o.TotalAmount >= minAmount.Value);
+    }
+
+    //Sorting
     if (!string.IsNullOrEmpty(sortBy))
     {
         query = sortBy.ToLower() switch
@@ -57,13 +77,15 @@ public class OrderService : IOrderService
         };
     }
 
+    //Pagination
     var orders = await query
         .Skip((page - 1) * pageSize)
         .Take(pageSize)
         .ToListAsync();
 
     return orders;
-}    public async Task<Order?> GetOrderByIdAsync(int id)
+}
+   public async Task<Order?> GetOrderByIdAsync(int id)
     {
         return await _repository.GetByIdAsync(id);
     }

@@ -9,7 +9,10 @@ public interface IOrderService
     int page,
     int pageSize,
     string? sortBy,
-    string sortOrder);
+    string sortOrder,
+    string? status,
+    bool? isVip,
+    decimal? minAmount);
     Task<Order?> GetOrderByIdAsync(int id);
     
     Task<Order?> UpdateOrderAsync(int id, Order updatedOrder);

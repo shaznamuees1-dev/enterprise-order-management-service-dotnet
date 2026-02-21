@@ -49,9 +49,13 @@ public async Task<ActionResult<List<OrderResponse>>> GetAllOrders(
     int page = 1,
     int pageSize = 10,
     string? sortBy = null,
-    string sortOrder = "asc")
+    string sortOrder = "asc",
+     string? status = null,
+    bool? isVip = null,
+    decimal? minAmount = null
+    )
 {
-    var orders = await _service.GetAllOrdersAsync(page, pageSize, sortBy, sortOrder);
+    var orders = await _service.GetAllOrdersAsync( page, pageSize, sortBy, sortOrder, status, isVip, minAmount);
 
     var response = orders.Select(o => new OrderResponse
     {
