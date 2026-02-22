@@ -3,16 +3,21 @@ using OrderManagementService.Repositories;
 using OrderManagementService.DTOs;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Hangfire;
 
 namespace OrderManagementService.Services;
 
 public class OrderService : IOrderService
 {
     private readonly IOrderRepository _repository;
+    private readonly BackgroundJobService _backgroundJobService;
 
-    public OrderService(IOrderRepository repository)
+    public OrderService(
+        IOrderRepository repository,
+        BackgroundJobService backgroundJobService)
     {
         _repository = repository;
+        _backgroundJobService = backgroundJobService;
     }
 
     public async Task<Order> CreateOrderAsync(Order order)
@@ -34,9 +39,14 @@ public class OrderService : IOrderService
             Log.Information("Order marked as Priority for VIP customer.");
         }
 
+         
         var created = await _repository.CreateAsync(order);
 
         Log.Information("Order {OrderId} created successfully.", created.Id);
+
+         
+       BackgroundJob.Enqueue<BackgroundJobService>(x =>
+    x.SendOrderConfirmation(created.Id));
 
         return created;
     }
@@ -50,14 +60,11 @@ public class OrderService : IOrderService
         bool? isVip,
         decimal? minAmount)
     {
-        Log.Information("Fetching orders with filters: Page={Page}, PageSize={PageSize}",
-            page, pageSize);
-
         var query = _repository
             .GetQueryable()
             .AsNoTracking();
 
-        // Filtering
+         
         if (!string.IsNullOrEmpty(status) &&
             Enum.TryParse<OrderStatus>(status, true, out var parsedStatus))
         {
@@ -74,7 +81,7 @@ public class OrderService : IOrderService
             query = query.Where(o => o.TotalAmount >= minAmount.Value);
         }
 
-        // Sorting
+        
         if (!string.IsNullOrEmpty(sortBy))
         {
             query = sortBy.ToLower() switch
@@ -91,18 +98,14 @@ public class OrderService : IOrderService
             };
         }
 
-        // Count BEFORE pagination
         var totalRecords = await query.CountAsync();
 
-        // Pagination
         var orders = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
 
         var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
-
-        Log.Information("Returned {Count} orders.", orders.Count);
 
         return new PagedResult<Order>
         {
@@ -114,24 +117,18 @@ public class OrderService : IOrderService
 
     public async Task<Order?> GetOrderByIdAsync(int id)
     {
-        Log.Information("Fetching order with ID {OrderId}", id);
         return await _repository.GetByIdAsync(id);
     }
 
     public async Task<Order?> UpdateOrderAsync(int id, Order updatedOrder)
     {
-        Log.Information("Updating order {OrderId}", id);
-
         var existingOrder = await _repository.GetByIdAsync(id);
 
         if (existingOrder == null)
             return null;
 
         if (existingOrder.Status == OrderStatus.Completed)
-        {
-            Log.Warning("Attempt to update completed order {OrderId}", id);
             throw new InvalidOperationException("Completed orders cannot be modified.");
-        }
 
         existingOrder.CustomerName = updatedOrder.CustomerName;
         existingOrder.TotalAmount = updatedOrder.TotalAmount;
@@ -140,24 +137,17 @@ public class OrderService : IOrderService
 
         await _repository.UpdateAsync(existingOrder);
 
-        Log.Information("Order {OrderId} updated successfully.", id);
-
         return existingOrder;
     }
 
     public async Task<bool> DeleteOrderAsync(int id)
     {
-        Log.Information("Deleting order {OrderId}", id);
-
         var order = await _repository.GetByIdAsync(id);
 
         if (order == null)
             return false;
 
         await _repository.DeleteAsync(order);
-
-        Log.Information("Order {OrderId} deleted successfully.", id);
-
         return true;
     }
 }

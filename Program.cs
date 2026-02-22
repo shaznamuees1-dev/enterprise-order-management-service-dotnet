@@ -8,6 +8,8 @@ using OrderManagementService.Middleware;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Serilog;
+using Hangfire;
+using Hangfire.MemoryStorage;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -26,6 +28,11 @@ try
         {
             options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
+    
+    builder.Services.AddHangfire(config =>
+    config.UseMemoryStorage());
+
+    builder.Services.AddHangfireServer();
 
     builder.Services.AddFluentValidationAutoValidation();
     builder.Services.AddValidatorsFromAssemblyContaining<Program>();
@@ -41,15 +48,23 @@ try
 
     builder.Services.AddScoped<IOrderRepository, OrderRepository>();
     builder.Services.AddScoped<IOrderService, OrderService>();
+    builder.Services.AddScoped<BackgroundJobService>();
 
     var app = builder.Build();
 
     Log.Information("Application starting...");
 
+    app.UseSerilogRequestLogging();
+    
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    app.UseSerilogRequestLogging();
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new HangfireAuthorizationFilter() }
+});
+
+    
 
     app.UseResponseCaching();
 
@@ -76,7 +91,7 @@ try
                 Thread.Sleep(3000);
             }
         }
-        
+
     }
 
     app.Run();
