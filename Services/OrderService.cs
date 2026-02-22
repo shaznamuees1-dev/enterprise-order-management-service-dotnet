@@ -1,5 +1,6 @@
 using OrderManagementService.Domain;
 using OrderManagementService.Repositories;
+using OrderManagementService.DTOs;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -40,7 +41,7 @@ public class OrderService : IOrderService
         return created;
     }
 
-    public async Task<List<Order>> GetAllOrdersAsync(
+    public async Task<PagedResult<Order>> GetAllOrdersAsync(
         int page,
         int pageSize,
         string? sortBy,
@@ -49,13 +50,14 @@ public class OrderService : IOrderService
         bool? isVip,
         decimal? minAmount)
     {
-        Log.Information("Fetching orders with filters: Page={Page}, PageSize={PageSize}, Status={Status}, IsVip={IsVip}, MinAmount={MinAmount}",
-            page, pageSize, status, isVip, minAmount);
+        Log.Information("Fetching orders with filters: Page={Page}, PageSize={PageSize}",
+            page, pageSize);
 
-       var query = _repository
-           .GetQueryable()
-           .AsNoTracking();
-       
+        var query = _repository
+            .GetQueryable()
+            .AsNoTracking();
+
+        // Filtering
         if (!string.IsNullOrEmpty(status) &&
             Enum.TryParse<OrderStatus>(status, true, out var parsedStatus))
         {
@@ -72,7 +74,7 @@ public class OrderService : IOrderService
             query = query.Where(o => o.TotalAmount >= minAmount.Value);
         }
 
-         
+        // Sorting
         if (!string.IsNullOrEmpty(sortBy))
         {
             query = sortBy.ToLower() switch
@@ -89,14 +91,25 @@ public class OrderService : IOrderService
             };
         }
 
+        // Count BEFORE pagination
+        var totalRecords = await query.CountAsync();
+
+        // Pagination
         var orders = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
 
+        var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+
         Log.Information("Returned {Count} orders.", orders.Count);
 
-        return orders;
+        return new PagedResult<Order>
+        {
+            Items = orders,
+            TotalRecords = totalRecords,
+            TotalPages = totalPages
+        };
     }
 
     public async Task<Order?> GetOrderByIdAsync(int id)
@@ -112,10 +125,7 @@ public class OrderService : IOrderService
         var existingOrder = await _repository.GetByIdAsync(id);
 
         if (existingOrder == null)
-        {
-            Log.Warning("Order {OrderId} not found.", id);
             return null;
-        }
 
         if (existingOrder.Status == OrderStatus.Completed)
         {
@@ -142,10 +152,7 @@ public class OrderService : IOrderService
         var order = await _repository.GetByIdAsync(id);
 
         if (order == null)
-        {
-            Log.Warning("Order {OrderId} not found for deletion.", id);
             return false;
-        }
 
         await _repository.DeleteAsync(order);
 

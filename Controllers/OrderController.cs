@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using OrderManagementService.Domain;
 using OrderManagementService.Services;
 using OrderManagementService.DTOs;
-using System.Linq;
 
 namespace OrderManagementService.Controllers;
 
@@ -39,19 +38,17 @@ public class OrderController : ControllerBase
             CreatedAt = createdOrder.CreatedAt
         };
 
-        var apiResponse = new ApiResponse<OrderResponse>
-        {
-            Success = true,
-            Message = "Order created successfully.",
-            Data = response
-        };
-
-        return CreatedAtAction(nameof(GetOrderById), new { id = response.Id }, apiResponse);
+        return CreatedAtAction(nameof(GetOrderById), new { id = response.Id },
+            new ApiResponse<OrderResponse>
+            {
+                Success = true,
+                Message = "Order created successfully.",
+                Data = response
+            });
     }
 
     [HttpGet]
-    [ResponseCache(Duration = 30)]
-    public async Task<ActionResult<ApiResponse<List<OrderResponse>>>> GetAllOrders(
+    public async Task<ActionResult<ApiResponse<PagedResult<OrderResponse>>>> GetAllOrders(
         int page = 1,
         int pageSize = 10,
         string? sortBy = null,
@@ -60,9 +57,10 @@ public class OrderController : ControllerBase
         bool? isVip = null,
         decimal? minAmount = null)
     {
-        var orders = await _service.GetAllOrdersAsync(page, pageSize, sortBy, sortOrder, status, isVip, minAmount);
+        var pagedResult = await _service.GetAllOrdersAsync(
+            page, pageSize, sortBy, sortOrder, status, isVip, minAmount);
 
-        var response = orders.Select(o => new OrderResponse
+        var mappedItems = pagedResult.Items.Select(o => new OrderResponse
         {
             Id = o.Id,
             CustomerName = o.CustomerName,
@@ -72,14 +70,17 @@ public class OrderController : ControllerBase
             CreatedAt = o.CreatedAt
         }).ToList();
 
-        var apiResponse = new ApiResponse<List<OrderResponse>>
+        return Ok(new ApiResponse<PagedResult<OrderResponse>>
         {
             Success = true,
             Message = "Orders retrieved successfully.",
-            Data = response
-        };
-
-        return Ok(apiResponse);
+            Data = new PagedResult<OrderResponse>
+            {
+                Items = mappedItems,
+                TotalRecords = pagedResult.TotalRecords,
+                TotalPages = pagedResult.TotalPages
+            }
+        });
     }
 
     [HttpGet("{id}")]
@@ -100,18 +101,16 @@ public class OrderController : ControllerBase
             CreatedAt = order.CreatedAt
         };
 
-        var apiResponse = new ApiResponse<OrderResponse>
+        return Ok(new ApiResponse<OrderResponse>
         {
             Success = true,
             Message = "Order retrieved successfully.",
             Data = response
-        };
-
-        return Ok(apiResponse);
+        });
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<ApiResponse<OrderResponse>>> UpdateOrder(int id, [FromBody] UpdateOrderRequest request)
+    public async Task<ActionResult<ApiResponse<OrderResponse>>> UpdateOrder(int id, UpdateOrderRequest request)
     {
         var updatedOrder = new Order
         {
@@ -136,14 +135,12 @@ public class OrderController : ControllerBase
             CreatedAt = result.CreatedAt
         };
 
-        var apiResponse = new ApiResponse<OrderResponse>
+        return Ok(new ApiResponse<OrderResponse>
         {
             Success = true,
             Message = "Order updated successfully.",
             Data = response
-        };
-
-        return Ok(apiResponse);
+        });
     }
 
     [HttpDelete("{id}")]
@@ -154,13 +151,11 @@ public class OrderController : ControllerBase
         if (!success)
             return NotFound();
 
-        var apiResponse = new ApiResponse<object>
+        return Ok(new ApiResponse<object>
         {
             Success = true,
             Message = "Order deleted successfully.",
             Data = null
-        };
-
-        return Ok(apiResponse);
+        });
     }
 }
