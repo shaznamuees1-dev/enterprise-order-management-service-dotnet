@@ -7,56 +7,79 @@ using System.Threading;
 using OrderManagementService.Middleware;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Serilog;
 
-var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console()
+    .WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
 
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    });
-
-builder.Services.AddFluentValidationAutoValidation();
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddHealthChecks();
-
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-builder.Services.AddScoped<IOrderService, OrderService>();
-
-var app = builder.Build();
-
-app.UseSwagger();
-app.UseSwaggerUI();
-
-app.UseMiddleware<ExceptionMiddleware>();
-
-app.MapControllers();
-app.MapHealthChecks("/health");
-
-using (var scope = app.Services.CreateScope())
+try
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var builder = WebApplication.CreateBuilder(args);
 
-    var retries = 5;
-    while (retries > 0)
+    builder.Host.UseSerilog();
+
+    builder.Services.AddControllers()
+        .AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        });
+
+    builder.Services.AddFluentValidationAutoValidation();
+    builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
+    builder.Services.AddHealthChecks();
+
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+    builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+    builder.Services.AddScoped<IOrderService, OrderService>();
+
+    var app = builder.Build();
+
+    Log.Information("Application starting...");
+
+    app.UseSwagger();
+    app.UseSwaggerUI();
+
+    app.UseSerilogRequestLogging();
+    app.UseMiddleware<ExceptionMiddleware>();
+
+    app.MapControllers();
+    app.MapHealthChecks("/health");
+
+    using (var scope = app.Services.CreateScope())
     {
-        try
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var retries = 5;
+        while (retries > 0)
         {
-            db.Database.Migrate();
-            break;
-        }
-        catch
-        {
-            retries--;
-            Thread.Sleep(3000);
+            try
+            {
+                db.Database.Migrate();
+                break;
+            }
+            catch
+            {
+                retries--;
+                Thread.Sleep(3000);
+            }
         }
     }
-}
 
-app.Run();
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application failed to start.");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
