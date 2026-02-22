@@ -4,7 +4,6 @@ using OrderManagementService.Services;
 using OrderManagementService.DTOs;
 using System.Linq;
 
-
 namespace OrderManagementService.Controllers;
 
 [ApiController]
@@ -19,116 +18,148 @@ public class OrderController : ControllerBase
     }
 
     [HttpPost]
-public async Task<ActionResult<OrderResponse>> CreateOrder(CreateOrderRequest request)
-{
-    var order = new Order
+    public async Task<ActionResult<ApiResponse<OrderResponse>>> CreateOrder(CreateOrderRequest request)
     {
-        CustomerName = request.CustomerName,
-        TotalAmount = request.TotalAmount,
-        IsVipCustomer = request.IsVipCustomer
-    };
+        var order = new Order
+        {
+            CustomerName = request.CustomerName,
+            TotalAmount = request.TotalAmount,
+            IsVipCustomer = request.IsVipCustomer
+        };
 
-    var createdOrder = await _service.CreateOrderAsync(order);
+        var createdOrder = await _service.CreateOrderAsync(order);
 
-    var response = new OrderResponse
+        var response = new OrderResponse
+        {
+            Id = createdOrder.Id,
+            CustomerName = createdOrder.CustomerName,
+            TotalAmount = createdOrder.TotalAmount,
+            IsVipCustomer = createdOrder.IsVipCustomer,
+            Status = createdOrder.Status,
+            CreatedAt = createdOrder.CreatedAt
+        };
+
+        var apiResponse = new ApiResponse<OrderResponse>
+        {
+            Success = true,
+            Message = "Order created successfully.",
+            Data = response
+        };
+
+        return CreatedAtAction(nameof(GetOrderById), new { id = response.Id }, apiResponse);
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<ApiResponse<List<OrderResponse>>>> GetAllOrders(
+        int page = 1,
+        int pageSize = 10,
+        string? sortBy = null,
+        string sortOrder = "asc",
+        string? status = null,
+        bool? isVip = null,
+        decimal? minAmount = null)
     {
-        Id = createdOrder.Id,
-        CustomerName = createdOrder.CustomerName,
-        TotalAmount = createdOrder.TotalAmount,
-        IsVipCustomer = createdOrder.IsVipCustomer,
-        Status = createdOrder.Status,
-        CreatedAt = createdOrder.CreatedAt
-    };
+        var orders = await _service.GetAllOrdersAsync(page, pageSize, sortBy, sortOrder, status, isVip, minAmount);
 
-    return CreatedAtAction(nameof(GetOrderById), new { id = response.Id }, response);
-}
+        var response = orders.Select(o => new OrderResponse
+        {
+            Id = o.Id,
+            CustomerName = o.CustomerName,
+            TotalAmount = o.TotalAmount,
+            IsVipCustomer = o.IsVipCustomer,
+            Status = o.Status,
+            CreatedAt = o.CreatedAt
+        }).ToList();
 
+        var apiResponse = new ApiResponse<List<OrderResponse>>
+        {
+            Success = true,
+            Message = "Orders retrieved successfully.",
+            Data = response
+        };
 
-[HttpGet]
-public async Task<ActionResult<List<OrderResponse>>> GetAllOrders(
-    int page = 1,
-    int pageSize = 10,
-    string? sortBy = null,
-    string sortOrder = "asc",
-     string? status = null,
-    bool? isVip = null,
-    decimal? minAmount = null
-    )
-{
-    var orders = await _service.GetAllOrdersAsync( page, pageSize, sortBy, sortOrder, status, isVip, minAmount);
+        return Ok(apiResponse);
+    }
 
-    var response = orders.Select(o => new OrderResponse
+    [HttpGet("{id}")]
+    public async Task<ActionResult<ApiResponse<OrderResponse>>> GetOrderById(int id)
     {
-        Id = o.Id,
-        CustomerName = o.CustomerName,
-        TotalAmount = o.TotalAmount,
-        IsVipCustomer = o.IsVipCustomer,
-        Status = o.Status,
-        CreatedAt = o.CreatedAt
-    }).ToList();
+        var order = await _service.GetOrderByIdAsync(id);
 
-    return Ok(response);
-}
+        if (order == null)
+            return NotFound();
 
-  [HttpGet("{id}")]
-public async Task<ActionResult<OrderResponse>> GetOrderById(int id)
-{
-    var order = await _service.GetOrderByIdAsync(id);
+        var response = new OrderResponse
+        {
+            Id = order.Id,
+            CustomerName = order.CustomerName,
+            TotalAmount = order.TotalAmount,
+            IsVipCustomer = order.IsVipCustomer,
+            Status = order.Status,
+            CreatedAt = order.CreatedAt
+        };
 
-    if (order == null)
-        return NotFound();
+        var apiResponse = new ApiResponse<OrderResponse>
+        {
+            Success = true,
+            Message = "Order retrieved successfully.",
+            Data = response
+        };
 
-    var response = new OrderResponse
+        return Ok(apiResponse);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult<ApiResponse<OrderResponse>>> UpdateOrder(int id, [FromBody] UpdateOrderRequest request)
     {
-        Id = order.Id,
-        CustomerName = order.CustomerName,
-        TotalAmount = order.TotalAmount,
-        IsVipCustomer = order.IsVipCustomer,
-        Status = order.Status,
-        CreatedAt = order.CreatedAt
-    };
+        var updatedOrder = new Order
+        {
+            CustomerName = request.CustomerName,
+            TotalAmount = request.TotalAmount,
+            IsVipCustomer = request.IsVipCustomer,
+            Status = request.Status
+        };
 
-    return Ok(response);
-}
+        var result = await _service.UpdateOrderAsync(id, updatedOrder);
 
-[HttpPut("{id}")]
-public async Task<ActionResult<OrderResponse>> UpdateOrder(int id, [FromBody] UpdateOrderRequest request)
-{
-    var updatedOrder = new Order
+        if (result == null)
+            return NotFound();
+
+        var response = new OrderResponse
+        {
+            Id = result.Id,
+            CustomerName = result.CustomerName,
+            TotalAmount = result.TotalAmount,
+            IsVipCustomer = result.IsVipCustomer,
+            Status = result.Status,
+            CreatedAt = result.CreatedAt
+        };
+
+        var apiResponse = new ApiResponse<OrderResponse>
+        {
+            Success = true,
+            Message = "Order updated successfully.",
+            Data = response
+        };
+
+        return Ok(apiResponse);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<ActionResult<ApiResponse<object>>> DeleteOrder(int id)
     {
-        CustomerName = request.CustomerName,
-        TotalAmount = request.TotalAmount,
-        IsVipCustomer = request.IsVipCustomer,
-        Status = request.Status
-    };
+        var success = await _service.DeleteOrderAsync(id);
 
-    var result = await _service.UpdateOrderAsync(id, updatedOrder);
+        if (!success)
+            return NotFound();
 
-    if (result == null)
-        return NotFound();
+        var apiResponse = new ApiResponse<object>
+        {
+            Success = true,
+            Message = "Order deleted successfully.",
+            Data = null
+        };
 
-    var response = new OrderResponse
-    {
-        Id = result.Id,
-        CustomerName = result.CustomerName,
-        TotalAmount = result.TotalAmount,
-        IsVipCustomer = result.IsVipCustomer,
-        Status = result.Status,
-        CreatedAt = result.CreatedAt
-    };
-
-    return Ok(response);
-}
-[HttpDelete("{id}")]
-public async Task<IActionResult> DeleteOrder(int id)
-{
-    var success = await _service.DeleteOrderAsync(id);
-
-    if (!success)
-        return NotFound();
-
-    return NoContent();
-}
-
-
+        return Ok(apiResponse);
+    }
 }
