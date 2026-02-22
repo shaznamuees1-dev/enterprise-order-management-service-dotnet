@@ -34,6 +34,8 @@ try
     builder.Services.AddSwaggerGen();
     builder.Services.AddHealthChecks();
 
+    builder.Services.AddResponseCaching();
+
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -48,6 +50,9 @@ try
     app.UseSwaggerUI();
 
     app.UseSerilogRequestLogging();
+
+    app.UseResponseCaching();
+
     app.UseMiddleware<ExceptionMiddleware>();
 
     app.MapControllers();
@@ -71,6 +76,7 @@ try
                 Thread.Sleep(3000);
             }
         }
+        
     }
 
     app.Run();

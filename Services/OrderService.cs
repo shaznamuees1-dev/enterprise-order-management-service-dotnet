@@ -52,9 +52,10 @@ public class OrderService : IOrderService
         Log.Information("Fetching orders with filters: Page={Page}, PageSize={PageSize}, Status={Status}, IsVip={IsVip}, MinAmount={MinAmount}",
             page, pageSize, status, isVip, minAmount);
 
-        var query = _repository.GetQueryable();
-
-        // Filtering
+       var query = _repository
+           .GetQueryable()
+           .AsNoTracking();
+       
         if (!string.IsNullOrEmpty(status) &&
             Enum.TryParse<OrderStatus>(status, true, out var parsedStatus))
         {
@@ -71,7 +72,7 @@ public class OrderService : IOrderService
             query = query.Where(o => o.TotalAmount >= minAmount.Value);
         }
 
-        // Sorting
+         
         if (!string.IsNullOrEmpty(sortBy))
         {
             query = sortBy.ToLower() switch

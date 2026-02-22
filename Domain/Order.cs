@@ -1,5 +1,8 @@
 namespace OrderManagementService.Domain;
+using Microsoft.EntityFrameworkCore;
 
+[Index(nameof(CustomerName))]
+[Index(nameof(Status))]
 public class Order
 {
     public int Id { get; set; }

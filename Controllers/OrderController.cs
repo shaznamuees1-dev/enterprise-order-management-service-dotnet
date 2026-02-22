@@ -50,6 +50,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet]
+    [ResponseCache(Duration = 30)]
     public async Task<ActionResult<ApiResponse<List<OrderResponse>>>> GetAllOrders(
         int page = 1,
         int pageSize = 10,
