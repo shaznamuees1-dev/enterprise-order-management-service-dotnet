@@ -3,7 +3,12 @@ using OrderManagementService.Domain;
 using OrderManagementService.Services;
 using OrderManagementService.DTOs;
 
+
 namespace OrderManagementService.Controllers;
+
+using Microsoft.AspNetCore.Authorization;
+
+[Authorize]
 
 [ApiController]
 [ApiVersion("1.0")]
