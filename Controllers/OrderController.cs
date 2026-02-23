@@ -87,9 +87,7 @@ public class OrderController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ApiResponse<OrderResponse>>> GetOrderById(int id)
     {
-        //throw new Exception("Test error");
-        // used to test 500 error
-
+         
         var order = await _service.GetOrderByIdAsync(id);
 
         if (order == null)

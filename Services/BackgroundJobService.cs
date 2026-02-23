@@ -12,8 +12,7 @@ public class BackgroundJobService
 
         await Task.Delay(2000);
 
-        // throw new Exception("Simulated job failure");
-        // Used temporarily to test Hangfire retry mechanism 
+         
 
         Log.Information("Background Job: Confirmation sent for Order {OrderId}", orderId);
     }
