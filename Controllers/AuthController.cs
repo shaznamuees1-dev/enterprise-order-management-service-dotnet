@@ -16,15 +16,21 @@ public class AuthController : ControllerBase
         _jwtService = jwtService;
     }
 
-    [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginRequest request)
+[HttpPost("login")]
+public IActionResult Login([FromBody] LoginRequest request)
+{
+    if (request.Username == "admin" && request.Password == "password")
     {
-        if (request.Username == "admin" && request.Password == "password")
-        {
-            var token = _jwtService.GenerateToken("1", "Admin");
-            return Ok(new { Token = token });
-        }
-
-        return Unauthorized("Invalid credentials");
+        var token = _jwtService.GenerateToken("1", "Admin");
+        return Ok(new { Token = token });
     }
+
+    if (request.Username == "user" && request.Password == "password")
+    {
+        var token = _jwtService.GenerateToken("2", "User");
+        return Ok(new { Token = token });
+    }
+
+    return Unauthorized("Invalid credentials");
+}
 }

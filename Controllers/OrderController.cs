@@ -21,7 +21,8 @@ public class OrderController : ControllerBase
     {
         _service = service;
     }
-
+    
+    [Authorize(Roles = "Admin,User")]
     [HttpPost]
     public async Task<ActionResult<ApiResponse<OrderResponse>>> CreateOrder(CreateOrderRequest request)
     {
@@ -52,7 +53,8 @@ public class OrderController : ControllerBase
                 Data = response
             });
     }
-
+    
+    [Authorize(Roles = "Admin,User")]
     [HttpGet]
     public async Task<ActionResult<ApiResponse<PagedResult<OrderResponse>>>> GetAllOrders(
         int page = 1,
@@ -88,7 +90,8 @@ public class OrderController : ControllerBase
             }
         });
     }
-
+    
+    [Authorize(Roles = "Admin,User")]
     [HttpGet("{id}")]
     public async Task<ActionResult<ApiResponse<OrderResponse>>> GetOrderById(int id)
     {
@@ -115,7 +118,8 @@ public class OrderController : ControllerBase
             Data = response
         });
     }
-
+    
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<ActionResult<ApiResponse<OrderResponse>>> UpdateOrder(int id, UpdateOrderRequest request)
     {
@@ -149,7 +153,8 @@ public class OrderController : ControllerBase
             Data = response
         });
     }
-
+    
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<ActionResult<ApiResponse<object>>> DeleteOrder(int id)
     {
