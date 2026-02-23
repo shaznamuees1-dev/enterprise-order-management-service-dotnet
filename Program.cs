@@ -10,6 +10,7 @@ using FluentValidation.AspNetCore;
 using Serilog;
 using Hangfire;
 using Hangfire.MemoryStorage;
+using Microsoft.AspNetCore.Mvc;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -49,6 +50,35 @@ try
     builder.Services.AddScoped<IOrderRepository, OrderRepository>();
     builder.Services.AddScoped<IOrderService, OrderService>();
     builder.Services.AddScoped<BackgroundJobService>();
+
+    builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(x => x.Value?.Errors.Count > 0)
+            .Select(x => new
+            {
+                Field = x.Key,
+                Errors = x.Value!.Errors.Select(e => e.ErrorMessage)
+            });
+
+        var response = new
+        {
+            Success = false,
+            Message = "Validation failed.",
+            Errors = errors
+        };
+
+        return new BadRequestObjectResult(response);
+    };
+});
+    builder.Services.AddApiVersioning(options =>
+{
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.ReportApiVersions = true;
+});
 
     var app = builder.Build();
 

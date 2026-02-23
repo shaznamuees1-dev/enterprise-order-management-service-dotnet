@@ -6,7 +6,8 @@ using OrderManagementService.DTOs;
 namespace OrderManagementService.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class OrderController : ControllerBase
 {
     private readonly IOrderService _service;
@@ -86,6 +87,9 @@ public class OrderController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ApiResponse<OrderResponse>>> GetOrderById(int id)
     {
+        //throw new Exception("Test error");
+        // used to test 500 error
+
         var order = await _service.GetOrderByIdAsync(id);
 
         if (order == null)

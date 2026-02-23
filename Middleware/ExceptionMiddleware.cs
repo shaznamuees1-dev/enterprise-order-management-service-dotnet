@@ -1,6 +1,4 @@
 using System.Net;
-using System.Text.Json;
-using OrderManagementService.DTOs;
 
 namespace OrderManagementService.Middleware;
 
@@ -24,30 +22,28 @@ public class ExceptionMiddleware
             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
             context.Response.ContentType = "application/json";
 
-            var response = new ErrorResponse
+            var response = new
             {
+                Success = false,
                 Message = ex.Message,
-                StatusCode = context.Response.StatusCode,
                 Timestamp = DateTime.UtcNow
             };
 
-            await context.Response.WriteAsync(
-                JsonSerializer.Serialize(response));
+            await context.Response.WriteAsJsonAsync(response);
         }
         catch (Exception)
         {
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
             context.Response.ContentType = "application/json";
 
-            var response = new ErrorResponse
+            var response = new
             {
+                Success = false,
                 Message = "An unexpected error occurred.",
-                StatusCode = context.Response.StatusCode,
                 Timestamp = DateTime.UtcNow
             };
 
-            await context.Response.WriteAsync(
-                JsonSerializer.Serialize(response));
+            await context.Response.WriteAsJsonAsync(response);
         }
     }
 }
