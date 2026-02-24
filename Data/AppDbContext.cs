@@ -11,4 +11,6 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<Order> Orders => Set<Order>();
+
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 }
