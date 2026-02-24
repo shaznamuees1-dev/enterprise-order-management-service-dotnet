@@ -1,4 +1,5 @@
 using System.Net;
+using OrderManagementService.DTOs;
 
 namespace OrderManagementService.Middleware;
 
@@ -19,31 +20,30 @@ public class ExceptionMiddleware
         }
         catch (InvalidOperationException ex)
         {
-            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-            context.Response.ContentType = "application/json";
-
-            var response = new
-            {
-                Success = false,
-                Message = ex.Message,
-                Timestamp = DateTime.UtcNow
-            };
-
-            await context.Response.WriteAsJsonAsync(response);
+            await HandleExceptionAsync(context, ex.Message, HttpStatusCode.BadRequest);
         }
         catch (Exception)
         {
-            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-            context.Response.ContentType = "application/json";
-
-            var response = new
-            {
-                Success = false,
-                Message = "An unexpected error occurred.",
-                Timestamp = DateTime.UtcNow
-            };
-
-            await context.Response.WriteAsJsonAsync(response);
+            await HandleExceptionAsync(context, "An unexpected error occurred.", HttpStatusCode.InternalServerError);
         }
+    }
+
+    private static Task HandleExceptionAsync(
+        HttpContext context,
+        string message,
+        HttpStatusCode statusCode)
+    {
+        context.Response.StatusCode = (int)statusCode;
+        context.Response.ContentType = "application/json";
+
+        var response = new ErrorResponse
+        {
+            Success = false,
+            Message = message,
+            StatusCode = (int)statusCode,
+            Timestamp = DateTime.UtcNow
+        };
+
+        return context.Response.WriteAsJsonAsync(response);
     }
 }

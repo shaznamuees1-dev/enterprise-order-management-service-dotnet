@@ -24,7 +24,7 @@ public class OrderController : ControllerBase
     
     [Authorize(Roles = "Admin,User")]
     [HttpPost]
-    public async Task<ActionResult<ApiResponse<OrderResponse>>> CreateOrder(CreateOrderRequest request)
+    public async Task<ActionResult<BaseResponse<OrderResponse>>> CreateOrder(CreateOrderRequest request)
     {
         var order = new Order
         {
@@ -46,7 +46,7 @@ public class OrderController : ControllerBase
         };
 
         return CreatedAtAction(nameof(GetOrderById), new { id = response.Id },
-            new ApiResponse<OrderResponse>
+            new BaseResponse<OrderResponse>
             {
                 Success = true,
                 Message = "Order created successfully.",
@@ -56,7 +56,7 @@ public class OrderController : ControllerBase
     
     [Authorize(Roles = "Admin,User")]
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<PagedResult<OrderResponse>>>> GetAllOrders(
+    public async Task<ActionResult<BaseResponse<PagedResult<OrderResponse>>>> GetAllOrders(
         int page = 1,
         int pageSize = 10,
         string? sortBy = null,
@@ -78,7 +78,7 @@ public class OrderController : ControllerBase
             CreatedAt = o.CreatedAt
         }).ToList();
 
-        return Ok(new ApiResponse<PagedResult<OrderResponse>>
+        return Ok(new BaseResponse<PagedResult<OrderResponse>>
         {
             Success = true,
             Message = "Orders retrieved successfully.",
@@ -93,9 +93,14 @@ public class OrderController : ControllerBase
     
     [Authorize(Roles = "Admin,User")]
     [HttpGet("{id}")]
-    public async Task<ActionResult<ApiResponse<OrderResponse>>> GetOrderById(int id)
+    public async Task<ActionResult<BaseResponse<OrderResponse>>> GetOrderById(int id)
     {
-         
+        // Temporary test for middleware validation:
+        // throw new InvalidOperationException("Bad request test"); // Should return 400
+
+        // Temporary test for global exception handling:
+        // throw new Exception("Server crash test"); // Should return 500
+        
         var order = await _service.GetOrderByIdAsync(id);
 
         if (order == null)
@@ -111,7 +116,7 @@ public class OrderController : ControllerBase
             CreatedAt = order.CreatedAt
         };
 
-        return Ok(new ApiResponse<OrderResponse>
+        return Ok(new BaseResponse<OrderResponse>
         {
             Success = true,
             Message = "Order retrieved successfully.",
@@ -121,7 +126,7 @@ public class OrderController : ControllerBase
     
     [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
-    public async Task<ActionResult<ApiResponse<OrderResponse>>> UpdateOrder(int id, UpdateOrderRequest request)
+    public async Task<ActionResult<BaseResponse<OrderResponse>>> UpdateOrder(int id, UpdateOrderRequest request)
     {
         var updatedOrder = new Order
         {
@@ -146,7 +151,7 @@ public class OrderController : ControllerBase
             CreatedAt = result.CreatedAt
         };
 
-        return Ok(new ApiResponse<OrderResponse>
+        return Ok(new BaseResponse<OrderResponse>
         {
             Success = true,
             Message = "Order updated successfully.",
@@ -156,14 +161,14 @@ public class OrderController : ControllerBase
     
     [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
-    public async Task<ActionResult<ApiResponse<object>>> DeleteOrder(int id)
+    public async Task<ActionResult<BaseResponse<object>>> DeleteOrder(int id)
     {
         var success = await _service.DeleteOrderAsync(id);
 
         if (!success)
             return NotFound();
 
-        return Ok(new ApiResponse<object>
+        return Ok(new BaseResponse<object>
         {
             Success = true,
             Message = "Order deleted successfully.",

@@ -140,7 +140,8 @@ var key = Encoding.UTF8.GetBytes(jwtSettings.SecretKey);
 
         ValidIssuer = jwtSettings.Issuer,
         ValidAudience = jwtSettings.Audience,
-        IssuerSigningKey = new SymmetricSecurityKey(key)
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ClockSkew = TimeSpan.Zero
     };
 });
 
@@ -164,10 +165,11 @@ builder.Services.AddAuthorization();
 
     app.UseResponseCaching();
 
-    app.UseMiddleware<ExceptionMiddleware>();
-    
     app.UseAuthentication();
     app.UseAuthorization();
+
+    app.UseMiddleware<ExceptionMiddleware>();
+    app.UseHttpsRedirection();
 
     app.MapControllers();
     app.MapHealthChecks("/health");

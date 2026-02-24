@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using OrderManagementService.Services;
 using OrderManagementService.DTOs;
 using OrderManagementService.Data;
+using OrderManagementService.Domain.Entities;
 
 namespace OrderManagementService.Controllers;
 
@@ -25,33 +26,19 @@ public class AuthController : ControllerBase
     {
         if (request.Username == "admin" && request.Password == "password")
         {
-            var accessToken = _jwtService.GenerateToken("1", "Admin");
-            var refreshToken = _jwtService.GenerateRefreshToken();
-
-            await SaveRefreshToken("1", "Admin", refreshToken);
-
-            return Ok(new
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken
-            });
+            return await GenerateLoginResponse("1", "Admin");
         }
 
         if (request.Username == "user" && request.Password == "password")
         {
-            var accessToken = _jwtService.GenerateToken("2", "User");
-            var refreshToken = _jwtService.GenerateRefreshToken();
-
-            await SaveRefreshToken("2", "User", refreshToken);
-
-            return Ok(new
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken
-            });
+            return await GenerateLoginResponse("2", "User");
         }
 
-        return Unauthorized("Invalid credentials");
+        return Unauthorized(new ErrorResponse
+        {
+            Message = "Invalid credentials",
+            StatusCode = 401
+        });
     }
 
     [HttpPost("refresh")]
@@ -61,16 +48,46 @@ public class AuthController : ControllerBase
             .FirstOrDefaultAsync(t => t.Token == request.RefreshToken);
 
         if (storedToken == null || storedToken.IsRevoked || storedToken.ExpiryDate < DateTime.UtcNow)
-            return Unauthorized("Invalid refresh token");
+        {
+            return Unauthorized(new ErrorResponse
+            {
+                Message = "Invalid refresh token",
+                StatusCode = 401
+            });
+        }
 
         var newAccessToken = _jwtService.GenerateToken(
             storedToken.UserId,
             storedToken.Role
         );
 
-        return Ok(new
+        return Ok(new BaseResponse<object>
         {
-            AccessToken = newAccessToken
+            Success = true,
+            Message = "Token refreshed successfully.",
+            Data = new
+            {
+                AccessToken = newAccessToken
+            }
+        });
+    }
+
+    private async Task<IActionResult> GenerateLoginResponse(string userId, string role)
+    {
+        var accessToken = _jwtService.GenerateToken(userId, role);
+        var refreshToken = _jwtService.GenerateRefreshToken();
+
+        await SaveRefreshToken(userId, role, refreshToken);
+
+        return Ok(new BaseResponse<object>
+        {
+            Success = true,
+            Message = "Login successful.",
+            Data = new
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            }
         });
     }
 

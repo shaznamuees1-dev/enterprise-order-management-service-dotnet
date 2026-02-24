@@ -1,9 +1,9 @@
 namespace OrderManagementService.DTOs;
 
-public class ErrorResponse
+public class BaseResponse<T>
 {
-    public bool Success { get; set; } = false;
+    public bool Success { get; set; }
     public string Message { get; set; } = string.Empty;
-    public int StatusCode { get; set; }
+    public T? Data { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }
