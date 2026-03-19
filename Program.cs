@@ -151,6 +151,8 @@ builder.Services.AddAuthorization();
 
     Log.Information("Application starting...");
 
+    app.UseMiddleware<ExceptionMiddleware>();
+
     app.UseSerilogRequestLogging();
     
     app.UseSwagger();
@@ -168,7 +170,8 @@ builder.Services.AddAuthorization();
     app.UseAuthentication();
     app.UseAuthorization();
 
-    app.UseMiddleware<ExceptionMiddleware>();
+    app.UseMiddleware<RequestLoggingMiddleware>();
+
     app.UseHttpsRedirection();
 
     app.MapControllers();
