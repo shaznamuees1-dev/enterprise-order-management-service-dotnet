@@ -14,47 +14,64 @@ public class AuthController : ControllerBase
 {
     private readonly JwtService _jwtService;
     private readonly AppDbContext _context;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(JwtService jwtService, AppDbContext context)
+    public AuthController(
+        JwtService jwtService,
+        AppDbContext context,
+        ILogger<AuthController> logger)
     {
         _jwtService = jwtService;
         _context = context;
+        _logger = logger;
     }
 
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+[HttpPost("login")]
+public async Task<IActionResult> Login([FromBody] LoginRequest request)
+{
+    _logger.LogInformation("Login attempt for username: {Username}", request.Username);
+
+    if (request.Username == "admin" && request.Password == "password")
     {
-        if (request.Username == "admin" && request.Password == "password")
-        {
-            return await GenerateLoginResponse("1", "Admin");
-        }
-
-        if (request.Username == "user" && request.Password == "password")
-        {
-            return await GenerateLoginResponse("2", "User");
-        }
-
-        return Unauthorized(new ErrorResponse
-        {
-            Message = "Invalid credentials",
-            StatusCode = 401
-        });
+        _logger.LogInformation("User {UserId} logged in successfully with role Admin", "1");
+        return await GenerateLoginResponse("1", "Admin");
     }
+
+    if (request.Username == "user" && request.Password == "password")
+    {
+        _logger.LogInformation("User {UserId} logged in successfully with role User", "2");
+        return await GenerateLoginResponse("2", "User");
+    }
+
+    _logger.LogWarning("Invalid login attempt for username: {Username}", request.Username);
+
+    return Unauthorized(new ErrorResponse
+    {
+        Message = "Invalid credentials",
+        StatusCode = 401
+    });
+}
 
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
     {
+        _logger.LogInformation("Refresh token request received");
+
         var storedToken = await _context.RefreshTokens
             .FirstOrDefaultAsync(t => t.Token == request.RefreshToken);
 
         if (storedToken == null || storedToken.IsRevoked || storedToken.ExpiryDate < DateTime.UtcNow)
         {
+            _logger.LogWarning("Invalid or expired refresh token attempt");
+
             return Unauthorized(new ErrorResponse
             {
                 Message = "Invalid refresh token",
                 StatusCode = 401
             });
         }
+
+        _logger.LogInformation("Refresh token valid for user {UserId}", storedToken.UserId);
 
         var newAccessToken = _jwtService.GenerateToken(
             storedToken.UserId,
@@ -104,5 +121,7 @@ public class AuthController : ControllerBase
 
         _context.RefreshTokens.Add(token);
         await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Refresh token saved for user {UserId}", userId);
     }
 }

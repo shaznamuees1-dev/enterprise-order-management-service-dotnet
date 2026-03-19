@@ -1,31 +1,39 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using OrderManagementService.Domain;
 using OrderManagementService.Services;
 using OrderManagementService.DTOs;
-
+using System.Security.Claims;
 
 namespace OrderManagementService.Controllers;
 
-using Microsoft.AspNetCore.Authorization;
-
 [Authorize]
-
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 public class OrderController : ControllerBase
 {
     private readonly IOrderService _service;
+    private readonly ILogger<OrderController> _logger;
 
-    public OrderController(IOrderService service)
+    public OrderController(IOrderService service, ILogger<OrderController> logger)
     {
         _service = service;
+        _logger = logger;
     }
-    
+
+    private string? GetUserId()
+    {
+        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    }
+
     [Authorize(Roles = "Admin,User")]
     [HttpPost]
     public async Task<ActionResult<BaseResponse<OrderResponse>>> CreateOrder(CreateOrderRequest request)
     {
+        var userId = GetUserId();
+        _logger.LogInformation("User {UserId} is creating order for {CustomerName}", userId, request.CustomerName);
+
         var order = new Order
         {
             CustomerName = request.CustomerName,
@@ -34,6 +42,8 @@ public class OrderController : ControllerBase
         };
 
         var createdOrder = await _service.CreateOrderAsync(order);
+
+        _logger.LogInformation("User {UserId} created order {OrderId}", userId, createdOrder.Id);
 
         var response = new OrderResponse
         {
@@ -53,7 +63,7 @@ public class OrderController : ControllerBase
                 Data = response
             });
     }
-    
+
     [Authorize(Roles = "Admin,User")]
     [HttpGet]
     public async Task<ActionResult<BaseResponse<PagedResult<OrderResponse>>>> GetAllOrders(
@@ -65,6 +75,9 @@ public class OrderController : ControllerBase
         bool? isVip = null,
         decimal? minAmount = null)
     {
+        var userId = GetUserId();
+        _logger.LogInformation("User {UserId} is fetching orders (Page: {Page}, PageSize: {PageSize})", userId, page, pageSize);
+
         var pagedResult = await _service.GetAllOrdersAsync(
             page, pageSize, sortBy, sortOrder, status, isVip, minAmount);
 
@@ -90,21 +103,21 @@ public class OrderController : ControllerBase
             }
         });
     }
-    
+
     [Authorize(Roles = "Admin,User")]
     [HttpGet("{id}")]
     public async Task<ActionResult<BaseResponse<OrderResponse>>> GetOrderById(int id)
     {
-        // Temporary test for middleware validation:
-        // throw new InvalidOperationException("Bad request test"); // Should return 400
+        var userId = GetUserId();
+        _logger.LogInformation("User {UserId} is fetching order {OrderId}", userId, id);
 
-        // Temporary test for global exception handling:
-        // throw new Exception("Server crash test"); // Should return 500
-        
         var order = await _service.GetOrderByIdAsync(id);
 
         if (order == null)
+        {
+            _logger.LogWarning("User {UserId} tried to access non-existing order {OrderId}", userId, id);
             return NotFound();
+        }
 
         var response = new OrderResponse
         {
@@ -123,11 +136,14 @@ public class OrderController : ControllerBase
             Data = response
         });
     }
-    
+
     [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
-    public async Task<ActionResult<BaseResponse<OrderResponse>>> UpdateOrder(int id, UpdateOrderRequest request)
+    public async Task<ActionResult<BaseResponse<OrderResponse>>> UpdateOrder(int id,[FromBody] UpdateOrderRequest request)
     {
+        var userId = GetUserId();
+        _logger.LogInformation("User {UserId} is updating order {OrderId}", userId, id);
+
         var updatedOrder = new Order
         {
             CustomerName = request.CustomerName,
@@ -139,7 +155,12 @@ public class OrderController : ControllerBase
         var result = await _service.UpdateOrderAsync(id, updatedOrder);
 
         if (result == null)
+        {
+            _logger.LogWarning("User {UserId} failed to update order {OrderId} (not found)", userId, id);
             return NotFound();
+        }
+
+        _logger.LogInformation("User {UserId} updated order {OrderId}", userId, id);
 
         var response = new OrderResponse
         {
@@ -158,15 +179,23 @@ public class OrderController : ControllerBase
             Data = response
         });
     }
-    
+
     [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<ActionResult<BaseResponse<object>>> DeleteOrder(int id)
     {
+        var userId = GetUserId();
+        _logger.LogInformation("User {UserId} is deleting order {OrderId}", userId, id);
+
         var success = await _service.DeleteOrderAsync(id);
 
         if (!success)
+        {
+            _logger.LogWarning("User {UserId} failed to delete order {OrderId} (not found)", userId, id);
             return NotFound();
+        }
+
+        _logger.LogInformation("User {UserId} deleted order {OrderId}", userId, id);
 
         return Ok(new BaseResponse<object>
         {
