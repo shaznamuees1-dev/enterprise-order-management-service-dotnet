@@ -151,6 +151,8 @@ builder.Services.AddAuthorization();
 
     Log.Information("Application starting...");
 
+    app.Urls.Add("http://0.0.0.0:8080");
+
     app.UseMiddleware<ExceptionMiddleware>();
 
     app.UseSerilogRequestLogging();
