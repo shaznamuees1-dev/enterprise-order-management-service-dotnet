@@ -1,26 +1,32 @@
-version: '3.8'
-
 services:
   api:
     build: .
     ports:
-      - "6501:8080"
+      - "${API_PORT}:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    restart: always
     environment:
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=ordersdb;Username=postgres;Password=postgres
-  
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - ASPNETCORE_ENVIRONMENT=Production
+
   db:
     image: postgres:15
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: ordersdb
+          - POSTGRES_DB=${POSTGRES_DB}
+          - POSTGRES_USER=${POSTGRES_USER}
+          - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data    
 
 volumes:
-  postgres_data:   
+  postgres_data:
