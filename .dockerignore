@@ -5,3 +5,10 @@ obj/
 *.db
 *.db-shm
 *.db-wal
+.gitignore
+README.md
+logs/
+.env
+.idea/
+*.user
+*.suo

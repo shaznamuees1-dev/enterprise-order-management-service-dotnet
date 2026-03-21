@@ -21,3 +21,9 @@ obj/
 
 #Logs
 logs/
+
+.env
+
+.DS_Store
+Thumbs.db
+
