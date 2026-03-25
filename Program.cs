@@ -9,7 +9,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Serilog;
 using Hangfire;
-using Hangfire.MemoryStorage;
+using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -42,7 +42,12 @@ try
         });
     
     builder.Services.AddHangfire(config =>
-    config.UseMemoryStorage());
+    config.UsePostgreSqlStorage(options =>
+        options.UseNpgsqlConnection(
+            builder.Configuration.GetConnectionString("DefaultConnection")
+        )
+    )
+);
 
     builder.Services.AddHangfireServer();
 
@@ -156,8 +161,10 @@ builder.Services.AddAuthorization();
     Directory.CreateDirectory("logs");
     
     var app = builder.Build();
+    Log.Information("LOG TEST AFTER BUILD");
 
     Log.Information("Application starting...");
+    Log.Information("LOG TEST: App has started at {Time}", DateTime.UtcNow);
 
     app.Urls.Add("http://0.0.0.0:8080");
 
@@ -185,13 +192,24 @@ builder.Services.AddAuthorization();
 
     app.UseMiddleware<RequestLoggingMiddleware>();
 
+    if (!app.Environment.IsDevelopment())
+{
     app.UseHttpsRedirection();
+}
 
     app.MapControllers();
     app.MapHealthChecks("/health");
 
     using (var scope = app.Services.CreateScope())
     {
+        
+        var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+
+    recurringJobManager.AddOrUpdate<BackgroundJobService>(
+        "process-orders",
+        x => x.ProcessOrder(0),
+        Cron.Minutely);
+
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var retries = 5;

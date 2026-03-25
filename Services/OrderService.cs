@@ -10,14 +10,13 @@ namespace OrderManagementService.Services;
 public class OrderService : IOrderService
 {
     private readonly IOrderRepository _repository;
-    private readonly BackgroundJobService _backgroundJobService;
-
+    private readonly IBackgroundJobClient _backgroundJobs;
     public OrderService(
         IOrderRepository repository,
-        BackgroundJobService backgroundJobService)
+        IBackgroundJobClient backgroundJobs)
     {
         _repository = repository;
-        _backgroundJobService = backgroundJobService;
+         _backgroundJobs = backgroundJobs ;
     }
 
     public async Task<Order> CreateOrderAsync(Order order)
@@ -45,7 +44,7 @@ public class OrderService : IOrderService
         Log.Information("Order {OrderId} created successfully.", created.Id);
 
          
-       BackgroundJob.Enqueue<BackgroundJobService>(x =>
+       _backgroundJobs.Enqueue<BackgroundJobService>(x =>
     x.SendOrderConfirmation(created.Id));
 
         return created;

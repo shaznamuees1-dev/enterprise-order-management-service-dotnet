@@ -16,4 +16,16 @@ public class BackgroundJobService
 
         Log.Information("Background Job: Confirmation sent for Order {OrderId}", orderId);
     }
+
+public void SendOrderCreatedNotification(int orderId)
+{
+    Log.Information("Background Job: Notification sent for Order {OrderId} at {Time}", 
+        orderId, DateTime.Now);
+}
+
+public void ProcessOrder(int orderId)
+{
+    Log.Information("Background Job: Processing Order {OrderId} at {Time}", 
+        orderId, DateTime.Now);
+}
 }

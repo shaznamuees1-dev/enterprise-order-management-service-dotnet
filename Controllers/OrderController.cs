@@ -4,6 +4,7 @@ using OrderManagementService.Domain;
 using OrderManagementService.Services;
 using OrderManagementService.DTOs;
 using System.Security.Claims;
+using Hangfire;
 
 namespace OrderManagementService.Controllers;
 
@@ -15,11 +16,21 @@ public class OrderController : ControllerBase
 {
     private readonly IOrderService _service;
     private readonly ILogger<OrderController> _logger;
+    private readonly IBackgroundJobClient _backgroundJobs; 
 
-    public OrderController(IOrderService service, ILogger<OrderController> logger)
+  
+
+    private readonly IRecurringJobManager _recurringJobs;
+    public OrderController(
+     IOrderService service,
+     ILogger<OrderController> logger,
+     IBackgroundJobClient backgroundJobs,
+     IRecurringJobManager recurringJobs)
     {
         _service = service;
         _logger = logger;
+        _backgroundJobs = backgroundJobs;
+        _recurringJobs = recurringJobs;
     }
 
     private string? GetUserId()
@@ -54,6 +65,13 @@ public class OrderController : ControllerBase
             Status = createdOrder.Status,
             CreatedAt = createdOrder.CreatedAt
         };
+        
+        _backgroundJobs.Enqueue<BackgroundJobService>(
+            x => x.SendOrderCreatedNotification(createdOrder.Id));
+
+        _backgroundJobs.Schedule<BackgroundJobService>(
+            x => x.ProcessOrder(createdOrder.Id),
+            TimeSpan.FromSeconds(30));
 
         return CreatedAtAction(nameof(GetOrderById), new { id = response.Id },
             new BaseResponse<OrderResponse>
