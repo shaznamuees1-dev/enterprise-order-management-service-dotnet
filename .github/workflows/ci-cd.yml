@@ -1,0 +1,25 @@
+name: CI/CD Pipeline
+on:
+  push:
+    branches:
+      - main
+env:
+  DOCKER_IMAGE: shaznamuees/order-api
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0'
+      - name: Build Project
+        run: dotnet build --configuration Release
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      - name: Build Docker Image
+        run: docker build -t $DOCKER_IMAGE .
+      - name: Push Docker Image
+        run: docker push $DOCKER_IMAGE
