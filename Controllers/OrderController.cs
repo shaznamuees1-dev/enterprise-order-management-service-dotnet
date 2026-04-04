@@ -222,4 +222,16 @@ public class OrderController : ControllerBase
             Data = null
         });
     }
+    [HttpGet("next-for-processing")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetNextOrderForProcessing()
+    {
+        var orders = await _service.GetAllOrdersAsync(1, 100, null, "asc", null, null, null);
+        var next = _service.GetNextOrderForProcessing(orders.Items);
+    
+        if (next == null)
+        return NotFound(new { message = "No orders available for processing" });
+        
+        return Ok(new { message = "Next order to process", data = next });
+    }
 }

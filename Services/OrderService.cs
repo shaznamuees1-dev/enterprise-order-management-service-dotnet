@@ -149,4 +149,23 @@ public class OrderService : IOrderService
         await _repository.DeleteAsync(order);
         return true;
     }
+
+    public Order? GetNextOrderForProcessing(IEnumerable<Order> orders)
+{
+    var priorityQueue = new PriorityQueue<Order, (int, decimal, DateTime)>();
+
+    foreach (var order in orders)
+    {
+        var priority = (
+            order.IsVipCustomer ? 0 : 1,        // VIP first
+            -order.TotalAmount,                   // Higher amount first
+            order.CreatedAt                       // Earlier first
+        );
+        priorityQueue.Enqueue(order, priority);
+    }
+
+    return priorityQueue.Count > 0 
+        ? priorityQueue.Dequeue() 
+        : null;
+}
 }

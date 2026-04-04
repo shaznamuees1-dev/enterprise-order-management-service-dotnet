@@ -16,6 +16,8 @@ public interface IOrderService
         bool? isVip,
         decimal? minAmount);
 
+    Order? GetNextOrderForProcessing(IEnumerable<Order> orders);
+    
     Task<Order?> GetOrderByIdAsync(int id);
 
     Task<Order?> UpdateOrderAsync(int id, Order updatedOrder);
