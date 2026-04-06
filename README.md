@@ -244,7 +244,8 @@ sudo docker compose up -d
 - JWT refresh token rotation with secure expiry handling
 - CI/CD pipeline email privacy issue with GitHub push protection
 
-
+## Frontend
+Frontend UI: enterprise-order-management-ui
 
 ## Author
 Shazna Muees  
