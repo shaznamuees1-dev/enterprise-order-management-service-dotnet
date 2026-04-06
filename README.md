@@ -245,7 +245,7 @@ sudo docker compose up -d
 - CI/CD pipeline email privacy issue with GitHub push protection
 
 ## Frontend
-Frontend UI: enterprise-order-management-ui
+Frontend UI: [enterprise-order-management-ui](https://github.com/shaznamuees1-dev/enterprise-order-management-ui)
 
 ## Author
 Shazna Muees  
